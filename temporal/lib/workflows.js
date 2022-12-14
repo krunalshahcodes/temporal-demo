@@ -23,19 +23,26 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Order = exports.orderStateQuery = void 0;
+exports.Order = exports.orderDelivered = exports.orderPaymentCompleted = exports.orderStateQuery = void 0;
 const workflow_1 = require("@temporalio/workflow");
 const wf = __importStar(require("@temporalio/workflow"));
-const { placeOrder } = (0, workflow_1.proxyActivities)({
+const { placeOrder, confirmOrder, confirmDelivered } = (0, workflow_1.proxyActivities)({
     startToCloseTimeout: "5 minutes",
 });
 exports.orderStateQuery = wf.defineQuery("orderState");
+exports.orderPaymentCompleted = wf.defineSignal("orderPaymentCompleted");
+exports.orderDelivered = wf.defineSignal("orderDelivered");
 async function Order(orderInfo) {
     let orderState = "ORDER_PAYMENT_PENDING";
     wf.setHandler(exports.orderStateQuery, () => orderState);
+    wf.setHandler(exports.orderPaymentCompleted, () => void (orderState = "ORDER_CONFIRMED"));
+    wf.setHandler(exports.orderDelivered, () => void (orderState = "ORDER_DELIVERED"));
     const result = await placeOrder(orderInfo.id);
-    await (0, workflow_1.sleep)("5 minutes");
-    console.log(`Activity ID: ${result} executed!`);
+    // if (await wf.condition(() => orderState === "ORDER_DELIVERED", "5s")) {
+    //   return await confirmDelivered(orderInfo.id);
+    // }
+    await (0, workflow_1.sleep)("1 minutes");
+    // console.log(`Activity ID: ${result} executed!`);
 }
 exports.Order = Order;
 //# sourceMappingURL=workflows.js.map

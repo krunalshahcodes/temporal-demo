@@ -1,29 +1,52 @@
 import { Product } from "@prisma/client";
 import Image from "next/image";
 import { useState } from "react";
+import getStripe from "../utils/stripe";
 
 export type ProductCardProps = {
   product: Product;
 };
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const [ordering, setOrdering] = useState<boolean>(false);
+  const [status, setStatus] = useState<string | null>(null);
   const handleOrder = async () => {
-    setOrdering(true);
-
-    await fetch("/api/placeOrder", {
+    const placeRes = await fetch("/api/placeOrder", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ productId: product.id }),
-    })
-      .then((res) => {
-        console.log("res", res);
-        setOrdering(false);
-      })
-      .catch((err) => {
-        setOrdering(false);
-        console.error("err", err);
-      });
+    });
+    const placeResData = await placeRes.json();
+
+    console.log("placeResData", placeResData);
+
+    setStatus("ORDER_PAYMENT_PENDING");
+
+    const checkoutRes = await fetch("/api/checkout", {
+      method: "POST",
+      mode: "cors",
+      cache: "no-cache",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      redirect: "follow",
+      referrerPolicy: "no-referrer",
+      body: JSON.stringify({
+        orderId: placeResData.orderId,
+        workflowId: placeResData.workflowId,
+      }),
+    });
+
+    const data = await checkoutRes.json();
+
+    if (data.statusCode === 500) {
+      console.log(data.message);
+      return;
+    }
+
+    const stripe = await getStripe();
+    const { error } = await stripe!.redirectToCheckout({
+      sessionId: data.id,
+    });
+    console.log("Stripe Error", error.message);
   };
 
   return (
@@ -42,9 +65,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
       </div>
       <p className="mt-1 text-sm text-gray-500">{product.category}</p>
       <button
-        disabled={ordering}
+        disabled={status !== null}
         onClick={handleOrder}
-        className="bg-blue-500 w-full text-white px-4 py-2 rounded-xl mt-2"
+        className="bg-blue-500 w-full text-white px-4 py-2 rounded-xl mt-2 disabled:bg-gray-500"
       >
         Order
       </button>

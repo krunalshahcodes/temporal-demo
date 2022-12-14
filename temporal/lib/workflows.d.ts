@@ -4,6 +4,8 @@ type OrderInfo = {
     id: string;
 };
 export declare const orderStateQuery: wf.QueryDefinition<OrderState, []>;
+export declare const orderPaymentCompleted: wf.SignalDefinition<[]>;
+export declare const orderDelivered: wf.SignalDefinition<[]>;
 export declare function Order(orderInfo: OrderInfo): Promise<any>;
 export {};
 //# sourceMappingURL=workflows.d.ts.map

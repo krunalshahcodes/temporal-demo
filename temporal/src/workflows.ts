@@ -2,7 +2,9 @@ import { proxyActivities, sleep } from "@temporalio/workflow";
 import type * as activities from "./activities";
 import * as wf from "@temporalio/workflow";
 
-const { placeOrder } = proxyActivities<typeof activities>({
+const { placeOrder, confirmOrder, confirmDelivered } = proxyActivities<
+  typeof activities
+>({
   startToCloseTimeout: "5 minutes",
 });
 
@@ -24,11 +26,23 @@ type OrderInfo = {
 };
 
 export const orderStateQuery = wf.defineQuery<OrderState>("orderState");
+export const orderPaymentCompleted = wf.defineSignal("orderPaymentCompleted");
+export const orderDelivered = wf.defineSignal("orderDelivered");
 
 export async function Order(orderInfo: OrderInfo): Promise<any> {
   let orderState: OrderState = "ORDER_PAYMENT_PENDING";
   wf.setHandler(orderStateQuery, () => orderState);
+  wf.setHandler(
+    orderPaymentCompleted,
+    () => void (orderState = "ORDER_CONFIRMED")
+  );
+  wf.setHandler(orderDelivered, () => void (orderState = "ORDER_DELIVERED"));
   const result = await placeOrder(orderInfo.id);
-  await sleep("5 minutes");
-  console.log(`Activity ID: ${result} executed!`);
+
+  // if (await wf.condition(() => orderState === "ORDER_DELIVERED", "5s")) {
+  //   return await confirmDelivered(orderInfo.id);
+  // }
+  await sleep("1 minutes");
+
+  // console.log(`Activity ID: ${result} executed!`);
 }

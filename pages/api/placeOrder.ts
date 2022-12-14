@@ -3,7 +3,7 @@ import { WorkflowClient } from "@temporalio/client";
 import { nanoid } from "nanoid";
 import { Order } from "../../temporal/lib/workflows";
 import prisma from "../../utils/prisma";
-import { Prisma, Product } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 export default async function placeOrder(
   req: NextApiRequest,
@@ -24,7 +24,7 @@ export default async function placeOrder(
       args: [order],
     });
 
-    res.status(200).json({ workflowId: handle.workflowId });
+    res.status(200).json({ workflowId: handle.workflowId, orderId: order.id });
   } catch (error) {
     console.log(error);
     res.status(500).json({ error });
