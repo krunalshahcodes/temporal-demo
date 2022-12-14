@@ -37,12 +37,10 @@ export async function Order(orderInfo: OrderInfo): Promise<any> {
     () => void (orderState = "ORDER_CONFIRMED")
   );
   wf.setHandler(orderDelivered, () => void (orderState = "ORDER_DELIVERED"));
-  const result = await placeOrder(orderInfo.id);
 
-  // if (await wf.condition(() => orderState === "ORDER_DELIVERED", "5s")) {
-  //   return await confirmDelivered(orderInfo.id);
-  // }
-  await sleep("1 minutes");
-
-  // console.log(`Activity ID: ${result} executed!`);
+  if (await wf.condition(() => orderState === "ORDER_DELIVERED", "20m")) {
+    return confirmDelivered(orderInfo.id);
+  } else {
+    return placeOrder(orderInfo.id);
+  }
 }

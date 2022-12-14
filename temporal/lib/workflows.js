@@ -37,12 +37,12 @@ async function Order(orderInfo) {
     wf.setHandler(exports.orderStateQuery, () => orderState);
     wf.setHandler(exports.orderPaymentCompleted, () => void (orderState = "ORDER_CONFIRMED"));
     wf.setHandler(exports.orderDelivered, () => void (orderState = "ORDER_DELIVERED"));
-    const result = await placeOrder(orderInfo.id);
-    // if (await wf.condition(() => orderState === "ORDER_DELIVERED", "5s")) {
-    //   return await confirmDelivered(orderInfo.id);
-    // }
-    await (0, workflow_1.sleep)("1 minutes");
-    // console.log(`Activity ID: ${result} executed!`);
+    if (await wf.condition(() => orderState === "ORDER_DELIVERED", "20m")) {
+        return confirmDelivered(orderInfo.id);
+    }
+    else {
+        return placeOrder(orderInfo.id);
+    }
 }
 exports.Order = Order;
 //# sourceMappingURL=workflows.js.map
